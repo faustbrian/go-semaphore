@@ -2,4 +2,4 @@
 set -eu
 
 root="$(git rev-parse --show-toplevel)"
-GOWORK=off "$root/scripts/check-api-baseline.sh" .
+GOWORK=off "$root/.golib/scripts/check-api-baseline.sh" .
