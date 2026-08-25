@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/semaphore"
+	"github.com/faustbrian/go-semaphore"
 )
 
 func TestObserverMayReenterSnapshotAndClose(t *testing.T) {

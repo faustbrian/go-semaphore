@@ -3,7 +3,7 @@
 The canonical API reference is generated from exported Go documentation:
 
 ```sh
-go doc -all github.com/faustbrian/golib/pkg/semaphore
+go doc -all github.com/faustbrian/go-semaphore
 ```
 
 The primary entry points are:

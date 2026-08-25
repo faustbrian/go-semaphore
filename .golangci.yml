@@ -1,68 +1,26 @@
 version: "2"
 
 run:
-  timeout: 5m
-  tests: true
+  timeout: 10m
 
 linters:
-  default: none
+  default: standard
   enable:
-    - asasalint
-    - bidichk
-    - copyloopvar
-    - durationcheck
-    - errcheck
+    - bodyclose
     - errorlint
     - exhaustive
-    - exptostd
-    - fatcontext
-    - forcetypeassert
-    - gocheckcompilerdirectives
     - gocritic
-    - godot
-    - govet
-    - ineffassign
-    - intrange
-    - makezero
-    - misspell
-    - modernize
-    - musttag
+    - gosec
     - nilerr
     - noctx
-    - nolintlint
-    - perfsprint
     - prealloc
-    - reassign
     - revive
-    - sloglint
-    - staticcheck
+    - rowserrcheck
+    - sqlclosecheck
+    - testifylint
     - unconvert
     - unparam
-    - unused
-    - usestdlibvars
     - wastedassign
-    - whitespace
-  settings:
-    errcheck:
-      check-type-assertions: false
-      check-blank: false
-    exhaustive:
-      default-signifies-exhaustive: true
-    govet:
-      enable-all: true
-      disable:
-        - fieldalignment
-        - shadow
-  exclusions:
-    generated: strict
-    presets:
-      - common-false-positives
-      - std-error-handling
-
-formatters:
-  enable:
-    - gofmt
-    - goimports
 
 issues:
   max-issues-per-linter: 0

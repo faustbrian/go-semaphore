@@ -11,7 +11,7 @@ import (
 	"time"
 	"weak"
 
-	"github.com/faustbrian/golib/pkg/semaphore"
+	"github.com/faustbrian/go-semaphore"
 )
 
 func TestGeneratedConcurrentHistoriesMatchReferenceAccounting(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/semaphore"
+	"github.com/faustbrian/go-semaphore"
 	xsemaphore "golang.org/x/sync/semaphore"
 )
 

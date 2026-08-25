@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/semaphore
+module github.com/faustbrian/go-semaphore
 
 go 1.26.6
 

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/semaphore"
+	"github.com/faustbrian/go-semaphore"
 )
 
 func TestAcquireOwnsAndReleasesWeightedCapacity(t *testing.T) {
