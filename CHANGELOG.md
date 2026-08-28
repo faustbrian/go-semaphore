@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Changed
+
+- Replace copied repository tooling with the pinned shared `golib` contract
+  while retaining package-owned policy and verification evidence.
+
+### Documentation
+
+- Replace archived monorepo links and completed execution artifacts with a
+  standalone, human-oriented documentation structure.
+
 ## 1.0.0 - 2026-08-25
 
 ### Changed
@@ -27,7 +37,7 @@
 
 ### Documentation
 
-- Link the package README to the repository-wide Golib documentation portal.
+- Link the package README to package-owned documentation.
 
 ### Added
 
