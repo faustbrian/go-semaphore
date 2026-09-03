@@ -4,10 +4,19 @@
 
 ### Changed
 
-- Replace copied repository tooling with the pinned `go-library-tools` v1.0.13
+- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing semaphore API or runtime behavior.
+- Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
+  repository's required CI contract.
+
+- Replace copied repository tooling with the pinned `go-library-tools` v1.0.14
   contract while retaining package-owned policy and verification evidence.
 
 ### Documentation
+
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.3.0 ecosystem index and family guidance.
 
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
