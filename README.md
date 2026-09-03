@@ -126,3 +126,7 @@ capacity in a replicated workload.
 - [FAQ](docs/faq.md)
 - [Security policy](SECURITY.md)
 - [Release notes](CHANGELOG.md)
+
+For ecosystem-wide selection and ownership guidance, see the versioned
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md)
+and its [Resilience family](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/design-language.md#package-families-and-selection).
