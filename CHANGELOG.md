@@ -4,6 +4,10 @@
 
 ### Changed
 
+- Adopt the checksum-verified `go-library-tools` v1.4.0 CLI and immutable W14
+  reusable workflow, including repository-local specification discovery and
+  validation, without changing the semaphore API or runtime behavior.
+
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing semaphore API or runtime behavior.
 - Pin reusable CI to the v1.3.0 workflow and enforce cohesion metadata in the
@@ -13,6 +17,9 @@
   contract while retaining package-owned policy and verification evidence.
 
 ### Documentation
+
+- Link ecosystem and Resilience family guidance to the immutable v1.4.0
+  documentation release.
 
 - Publish the module's family, capabilities, ownership, lifecycle, supported
   environments, package selection, and delivery status, and link the README to
