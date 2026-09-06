@@ -20,6 +20,14 @@ fixed concurrency cap, a buffered channel remains smaller. For admission
 without ownership, shutdown, or queue observability, consider
 `golang.org/x/sync/semaphore`.
 
+The module is a stable v1 public library. It requires Go 1.26.6 or newer.
+
+## Install
+
+```sh
+go get github.com/faustbrian/go-semaphore@v1
+```
+
 ## Quick start
 
 ```go
@@ -52,6 +60,12 @@ defer permit.Release()
 
 The permit remains releasable after `ctx` is canceled. A second or concurrent
 duplicate release returns `*DuplicateReleaseError` and cannot add capacity.
+
+A `Semaphore` owns synchronized process-local admission state but no
+background work. It is safe for concurrent use. The caller owns every returned
+`Permit` until release and must eventually release it. Observer callbacks and
+operation functions are borrowed for the duration of their calls and must be
+safe for any concurrency their callers permit.
 
 ## Contract
 
@@ -124,8 +138,10 @@ capacity in a replicated workload.
 - [Performance and benchmarks](docs/performance.md)
 - [API reference](docs/api.md)
 - [FAQ](docs/faq.md)
-- [Security policy](SECURITY.md)
-- [Release notes](CHANGELOG.md)
+- [Support](SUPPORT.md)
+- [Security policy and reporting guidance](SECURITY.md)
+- [Compatibility policy](COMPATIBILITY.md)
+- [Release history](CHANGELOG.md)
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
