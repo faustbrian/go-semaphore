@@ -8,8 +8,22 @@ for file in $required; do
         exit 1
     fi
 done
-if rg -n 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs; then
-    echo 'unfinished documentation marker found' >&2
-    exit 1
-fi
+set +e
+unfinished_markers="$(rg -n 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs 2>&1)"
+marker_status=$?
+set -e
+case "$marker_status" in
+    0)
+        printf '%s\n' "$unfinished_markers" >&2
+        echo 'unfinished documentation marker found' >&2
+        exit 1
+        ;;
+    1)
+        ;;
+    *)
+        printf '%s\n' "$unfinished_markers" >&2
+        echo 'documentation marker scan failed' >&2
+        exit "$marker_status"
+        ;;
+esac
 GOWORK=off go test ./... -run '^Example' -count=1

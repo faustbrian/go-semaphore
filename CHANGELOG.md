@@ -18,6 +18,9 @@
 
 ### Documentation
 
+- Clarify root and nested-module release tag formats and make documentation
+  validation fail when its unfinished-marker scan cannot run.
+
 - Add canonical v1 installation, stable Go support, lifecycle and ownership,
   project support, and security-reporting guidance.
 
