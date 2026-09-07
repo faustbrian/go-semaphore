@@ -9,7 +9,11 @@ for file in $required; do
     fi
 done
 set +e
-unfinished_markers="$(rg -n 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs 2>&1)"
+if command -v rg >/dev/null 2>&1; then
+    unfinished_markers="$(rg -n 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs 2>&1)"
+else
+    unfinished_markers="$(grep -Enr 'TODO|TBD|FIXME' README.md CHANGELOG.md CONTRIBUTING.md SECURITY.md docs 2>&1)"
+fi
 marker_status=$?
 set -e
 case "$marker_status" in
