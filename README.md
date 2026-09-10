@@ -10,7 +10,7 @@
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`semaphore` is a process-local, FIFO weighted counting semaphore for Go 1.26.6
+`semaphore` is a process-local, FIFO weighted counting semaphore for Go 1.27.0
 and newer. It adds bounded waiting, owned exactly-once permits, deterministic
 shutdown, immutable snapshots, and bounded observation events to the basic
 counting-semaphore pattern.
@@ -20,7 +20,7 @@ fixed concurrency cap, a buffered channel remains smaller. For admission
 without ownership, shutdown, or queue observability, consider
 `golang.org/x/sync/semaphore`.
 
-The module is a stable v1 public library. It requires Go 1.26.6 or newer.
+The module is a stable v1 public library. It requires Go 1.27.0 or newer.
 
 ## Install
 
