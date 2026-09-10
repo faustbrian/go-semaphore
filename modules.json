@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
   "repository": "github.com/faustbrian/go-semaphore",
-  "go_version": "1.26.6",
+  "go_version": "1.27.0",
   "modules": [
     {
       "directory": ".",
       "module_path": "github.com/faustbrian/go-semaphore",
-      "go_version": "1.26.6",
+      "go_version": "1.27.0",
       "packages": [
         {
           "module_directory": ".",
@@ -21,7 +21,7 @@
           "build_tags": []
         }
       ],
-      "purpose": "`semaphore` is a process-local, FIFO weighted counting semaphore for Go 1.26.6 and newer. It adds bounded waiting, owned exactly-once permits, deterministic shutdown, immutable snapshots, and bounded observation events to the basic counting-semaphore pattern.",
+      "purpose": "`semaphore` is a process-local, FIFO weighted counting semaphore for Go 1.27.0 and newer. It adds bounded waiting, owned exactly-once permits, deterministic shutdown, immutable snapshots, and bounded observation events to the basic counting-semaphore pattern.",
       "lifecycle": "stable",
       "kind": "public library",
       "releasable": true,
@@ -93,9 +93,9 @@
           "github.com/faustbrian/go-service"
         ],
         "supported_go": {
-          "minimum": "1.26.6",
+          "minimum": "1.27.0",
           "tested": [
-            "1.26.6"
+            "1.27.0"
           ]
         },
         "supported_platforms": [
