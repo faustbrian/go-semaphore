@@ -113,7 +113,11 @@ func TestQueuedCancellationCanReenterContextSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer held.Release()
+	defer func() {
+		if releaseErr := held.Release(); releaseErr != nil {
+			t.Errorf("release held permit: %v", releaseErr)
+		}
+	}()
 	base, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ctx := &snapshotErrContext{Context: base, sem: sem, checked: make(chan struct{})}
