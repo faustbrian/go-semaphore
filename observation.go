@@ -55,15 +55,26 @@ type Event struct {
 	Snapshot Snapshot
 }
 
-// Observer receives state transitions after accounting locks are released.
-// Implementations must be safe for concurrent calls. Panics are recovered;
-// slow callbacks delay only the caller delivering that event.
-type Observer interface {
-	Observe(Event)
+// EventBatch is an owned, bounded observation batch. Dropped reports events
+// overwritten since the previous drain because the configured buffer was full.
+type EventBatch struct {
+	Events  []Event
+	Dropped uint64
 }
 
-// ObserverFunc adapts a function to Observer.
-type ObserverFunc func(Event)
+// DrainEvents returns and removes buffered events in transition order. The
+// returned slice is caller-owned and contains at most Config.EventBuffer items.
+func (semaphore *Semaphore) DrainEvents() EventBatch {
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
 
-// Observe calls observer(event).
-func (observer ObserverFunc) Observe(event Event) { observer(event) }
+	batch := EventBatch{Events: make([]Event, semaphore.eventCount), Dropped: semaphore.droppedEvents}
+	for index := range semaphore.eventCount {
+		batch.Events[index] = semaphore.events[(semaphore.eventHead+index)%len(semaphore.events)]
+	}
+	clear(semaphore.events)
+	semaphore.eventHead = 0
+	semaphore.eventCount = 0
+	semaphore.droppedEvents = 0
+	return batch
+}

@@ -3,60 +3,18 @@ package semaphore_test
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
 
-	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-semaphore/v2"
 )
 
-func TestObserverMayReenterSnapshotAndClose(t *testing.T) {
+func TestBufferedEventsReportQueuedCancellationAndClosedRejection(t *testing.T) {
 	t.Parallel()
 
-	var sem *semaphore.Semaphore
-	var closeOnce sync.Once
-	observer := semaphore.ObserverFunc(func(event semaphore.Event) {
-		if sem == nil {
-			t.Fatal("observer called before construction completed")
-		}
-		_ = sem.Snapshot()
-		if event.Kind == semaphore.EventAdmitted {
-			closeOnce.Do(func() {
-				if err := sem.Close(); err != nil {
-					t.Errorf("reentrant Close() error = %v", err)
-				}
-			})
-		}
-	})
-	var err error
-	sem, err = semaphore.New(semaphore.Config{Capacity: 1, Observer: observer})
-	if err != nil {
-		t.Fatal(err)
-	}
-	permit, err := sem.Acquire(testContext(t), 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if snapshot := sem.Snapshot(); !snapshot.Closed || snapshot.Acquired != 1 {
-		t.Fatalf("reentrant snapshot = %+v", snapshot)
-	}
-	if err := permit.Release(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestObserverReportsQueuedCancellationAndClosedRejection(t *testing.T) {
-	t.Parallel()
-
-	var mutex sync.Mutex
-	var events []semaphore.Event
 	sem, err := semaphore.New(semaphore.Config{
-		Capacity:   1,
-		MaxWaiters: 1,
-		Observer: semaphore.ObserverFunc(func(event semaphore.Event) {
-			mutex.Lock()
-			events = append(events, event)
-			mutex.Unlock()
-		}),
+		Capacity:    1,
+		MaxWaiters:  1,
+		EventBuffer: 16,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -86,8 +44,7 @@ func TestObserverReportsQueuedCancellationAndClosedRejection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
+	events := sem.DrainEvents().Events
 	want := map[[2]string]bool{
 		{string(semaphore.EventQueued), string(semaphore.ReasonFIFO)}:              false,
 		{string(semaphore.EventCanceled), string(semaphore.ReasonContextCanceled)}: false,
@@ -104,5 +61,35 @@ func TestObserverReportsQueuedCancellationAndClosedRejection(t *testing.T) {
 		if !observed {
 			t.Errorf("transition %v missing from %+v", transition, events)
 		}
+	}
+}
+
+func TestObservationIsPullBasedAndBounded(t *testing.T) {
+	t.Parallel()
+
+	sem, err := semaphore.New(semaphore.Config{Capacity: 1, EventBuffer: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	permit, err := sem.Acquire(testContext(t), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, acquired, err := sem.TryAcquire(1); err != nil || acquired {
+		t.Fatalf("TryAcquire() = %t, %v", acquired, err)
+	}
+	if err := permit.Release(); err != nil {
+		t.Fatal(err)
+	}
+
+	batch := sem.DrainEvents()
+	if batch.Dropped != 1 || len(batch.Events) != 2 {
+		t.Fatalf("DrainEvents() = %+v", batch)
+	}
+	if batch.Events[0].Kind != semaphore.EventRejected || batch.Events[1].Kind != semaphore.EventReleased {
+		t.Fatalf("event kinds = %q, %q", batch.Events[0].Kind, batch.Events[1].Kind)
+	}
+	if next := sem.DrainEvents(); next.Dropped != 0 || len(next.Events) != 0 {
+		t.Fatalf("second DrainEvents() = %+v", next)
 	}
 }

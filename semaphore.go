@@ -10,11 +10,14 @@ import (
 // MaxWaiters is the largest supported bounded FIFO queue.
 const MaxWaiters = 1_000_000
 
+// MaxEventBuffer is the largest supported bounded observation queue.
+const MaxEventBuffer = 65_536
+
 // Config defines immutable semaphore capacity and queue bounds.
 type Config struct {
-	Capacity   int64
-	MaxWaiters int
-	Observer   Observer
+	Capacity    int64
+	MaxWaiters  int
+	EventBuffer int
 }
 
 // Snapshot is an immutable copy of observable semaphore state.
@@ -44,7 +47,10 @@ type Semaphore struct {
 	waiterCount   int
 	waiterHead    *waiter
 	waiterTail    *waiter
-	observer      Observer
+	events        []Event
+	eventHead     int
+	eventCount    int
+	droppedEvents uint64
 }
 
 type waiter struct {
@@ -67,10 +73,16 @@ func New(config Config) (*Semaphore, error) {
 	if config.MaxWaiters > MaxWaiters {
 		return nil, &ConfigError{field: FieldMaxWaiters, problem: ProblemExceedsBound}
 	}
+	if config.EventBuffer < 0 {
+		return nil, &ConfigError{field: FieldEventBuffer, problem: ProblemMustNotBeNegative}
+	}
+	if config.EventBuffer > MaxEventBuffer {
+		return nil, &ConfigError{field: FieldEventBuffer, problem: ProblemExceedsBound}
+	}
 	return &Semaphore{
 		capacity:   config.Capacity,
 		maxWaiters: config.MaxWaiters,
-		observer:   config.Observer,
+		events:     make([]Event, config.EventBuffer),
 	}, nil
 }
 
@@ -104,18 +116,16 @@ func (semaphore *Semaphore) Close() error {
 	}
 
 	semaphore.closed = true
-	var events []Event
 	for semaphore.waiterHead != nil {
 		waiter := semaphore.waiterHead
 		semaphore.removeWaiterLocked(waiter)
 		waiter.err = &ClosedError{}
 		semaphore.rejections++
-		events = semaphore.appendEventLocked(events, EventRejected, ReasonClosed, PermitID(0), waiter.weight)
+		semaphore.recordEventLocked(EventRejected, ReasonClosed, PermitID(0), waiter.weight)
 		close(waiter.ready)
 	}
-	events = semaphore.appendEventLocked(events, EventClosed, ReasonShutdown, PermitID(0), 0)
+	semaphore.recordEventLocked(EventClosed, ReasonShutdown, PermitID(0), 0)
 	semaphore.mu.Unlock()
-	semaphore.observe(events...)
 	return nil
 }
 
@@ -168,28 +178,20 @@ func (semaphore *Semaphore) Wait(ctx context.Context) error {
 	}
 }
 
-func (semaphore *Semaphore) eventLocked(kind EventKind, reason Reason, id PermitID, weight int64) Event {
-	if semaphore.observer == nil {
-		return Event{}
-	}
-	return Event{Kind: kind, Reason: reason, PermitID: id, Weight: weight, Snapshot: semaphore.snapshotLocked()}
-}
-
-func (semaphore *Semaphore) appendEventLocked(events []Event, kind EventKind, reason Reason, id PermitID, weight int64) []Event {
-	if semaphore.observer == nil {
-		return events
-	}
-	return append(events, semaphore.eventLocked(kind, reason, id, weight))
-}
-
-func (semaphore *Semaphore) observe(events ...Event) {
-	if semaphore.observer == nil {
+func (semaphore *Semaphore) recordEventLocked(kind EventKind, reason Reason, id PermitID, weight int64) {
+	if len(semaphore.events) == 0 {
 		return
 	}
-	for _, event := range events {
-		func() {
-			defer func() { _ = recover() }()
-			semaphore.observer.Observe(event)
-		}()
+	event := Event{Kind: kind, Reason: reason, PermitID: id, Weight: weight, Snapshot: semaphore.snapshotLocked()}
+	if semaphore.eventCount < len(semaphore.events) {
+		index := (semaphore.eventHead + semaphore.eventCount) % len(semaphore.events)
+		semaphore.events[index] = event
+		semaphore.eventCount++
+		return
+	}
+	semaphore.events[semaphore.eventHead] = event
+	semaphore.eventHead = (semaphore.eventHead + 1) % len(semaphore.events)
+	if semaphore.droppedEvents != ^uint64(0) {
+		semaphore.droppedEvents++
 	}
 }

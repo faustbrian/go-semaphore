@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-semaphore/v2"
 )
 
 func TestAcquireOwnsAndReleasesWeightedCapacity(t *testing.T) {
@@ -340,78 +340,12 @@ func TestRejectionCountersCoverEveryAdmissionBoundary(t *testing.T) {
 	}
 }
 
-func TestObserversRunOutsideAccountingLockAndCannotCorruptState(t *testing.T) {
+func TestBufferReceivesBoundedTransitionEvents(t *testing.T) {
 	t.Parallel()
 
-	entered := make(chan struct{})
-	releaseObserver := make(chan struct{})
-	var once sync.Once
-	observer := semaphore.ObserverFunc(func(event semaphore.Event) {
-		if event.Kind != semaphore.EventAdmitted {
-			return
-		}
-		once.Do(func() {
-			close(entered)
-			<-releaseObserver
-		})
-	})
-	sem, err := semaphore.New(semaphore.Config{Capacity: 1, Observer: observer})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	acquired := make(chan *semaphore.Permit, 1)
-	acquireCtx := testContext(t)
-	go func() {
-		permit, acquireErr := sem.Acquire(acquireCtx, 1)
-		if acquireErr != nil {
-			t.Errorf("Acquire() error = %v", acquireErr)
-		}
-		acquired <- permit
-	}()
-	receive(t, entered)
-
-	snapshotDone := make(chan semaphore.Snapshot, 1)
-	go func() { snapshotDone <- sem.Snapshot() }()
-	select {
-	case snapshot := <-snapshotDone:
-		if snapshot.Acquired != 1 {
-			t.Fatalf("snapshot during observer = %+v", snapshot)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("observer ran while accounting lock was held")
-	}
-	close(releaseObserver)
-	permit := receive(t, acquired)
-	if err := permit.Release(); err != nil {
-		t.Fatal(err)
-	}
-
-	panicking, err := semaphore.New(semaphore.Config{
-		Capacity: 1,
-		Observer: semaphore.ObserverFunc(func(semaphore.Event) { panic("observer panic") }),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	permit, err = panicking.Acquire(testContext(t), 1)
-	if err != nil {
-		t.Fatalf("panicking observer changed admission: %v", err)
-	}
-	if err := permit.Release(); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestObserverReceivesBoundedTransitionEvents(t *testing.T) {
-	t.Parallel()
-
-	var events []semaphore.Event
 	sem, err := semaphore.New(semaphore.Config{
-		Capacity: 1,
-		Observer: semaphore.ObserverFunc(func(event semaphore.Event) {
-			events = append(events, event)
-		}),
+		Capacity:    1,
+		EventBuffer: 4,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -429,6 +363,7 @@ func TestObserverReceivesBoundedTransitionEvents(t *testing.T) {
 	if err := sem.Close(); err != nil {
 		t.Fatal(err)
 	}
+	events := sem.DrainEvents().Events
 
 	want := []struct {
 		kind   semaphore.EventKind
@@ -763,6 +698,8 @@ func TestConstructionAndWeightsRejectInvalidOrUnavailableWork(t *testing.T) {
 		{name: "negative capacity", config: semaphore.Config{Capacity: -1}},
 		{name: "negative queue bound", config: semaphore.Config{Capacity: 1, MaxWaiters: -1}},
 		{name: "overflowing queue bound", config: semaphore.Config{Capacity: 1, MaxWaiters: semaphore.MaxWaiters + 1}},
+		{name: "negative event buffer", config: semaphore.Config{Capacity: 1, EventBuffer: -1}},
+		{name: "overflowing event buffer", config: semaphore.Config{Capacity: 1, EventBuffer: semaphore.MaxEventBuffer + 1}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -774,6 +711,13 @@ func TestConstructionAndWeightsRejectInvalidOrUnavailableWork(t *testing.T) {
 				t.Fatalf("New(%+v) = %v, %v", test.config, sem, err)
 			}
 		})
+	}
+	exact, err := semaphore.New(semaphore.Config{Capacity: 1, EventBuffer: semaphore.MaxEventBuffer})
+	if err != nil {
+		t.Fatalf("New(exact event buffer bound) error = %v", err)
+	}
+	if batch := exact.DrainEvents(); len(batch.Events) != 0 || batch.Dropped != 0 {
+		t.Fatalf("empty exact-bound event buffer = %+v", batch)
 	}
 
 	sem, err := semaphore.New(semaphore.Config{Capacity: 2})

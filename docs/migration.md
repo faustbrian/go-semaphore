@@ -31,3 +31,13 @@ worker pool.
 
 The packages share strict weighted head-of-line behavior, but they do not have
 drop-in-compatible lifecycle or error semantics.
+
+## From v1 to v2
+
+The v2 contract removes synchronous `Observer`
+callbacks because a callback could block after admission had consumed capacity
+but before the caller received its permit. Replace `Config.Observer` with a
+bounded `Config.EventBuffer` and periodically call `DrainEvents`; handle its
+`Dropped` count as telemetry loss. Switch dependencies and imports to `/v2`
+only after its public tag and module artifacts are available. Until then,
+retain released v1 dependencies without local replacements.

@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-semaphore.svg)](https://pkg.go.dev/github.com/faustbrian/go-semaphore)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-semaphore/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-semaphore/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-semaphore?sort=semver)](https://github.com/faustbrian/go-semaphore/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,12 +20,14 @@ fixed concurrency cap, a buffered channel remains smaller. For admission
 without ownership, shutdown, or queue observability, consider
 `golang.org/x/sync/semaphore`.
 
-The module is a stable v1 public library. It requires Go 1.27.0 or newer.
+The root source prepares the stable v2 line and requires Go 1.27.0 or newer.
+Installation below requires the public v2.0.0 tag and module artifacts; before
+publication, existing consumers remain on the separately released v1 line.
 
 ## Install
 
 ```sh
-go get github.com/faustbrian/go-semaphore@v1
+go get github.com/faustbrian/go-semaphore/v2@v2.0.0
 ```
 
 ## Quick start
@@ -63,9 +65,9 @@ duplicate release returns `*DuplicateReleaseError` and cannot add capacity.
 
 A `Semaphore` owns synchronized process-local admission state but no
 background work. It is safe for concurrent use. The caller owns every returned
-`Permit` until release and must eventually release it. Observer callbacks and
-operation functions are borrowed for the duration of their calls and must be
-safe for any concurrency their callers permit.
+`Permit` until release and must eventually release it. Operation functions are
+borrowed for the duration of their calls and must support the concurrency their
+callers permit. Observation is caller-pulled and invokes no callback.
 
 ## Contract
 
@@ -92,10 +94,10 @@ safe for any concurrency their callers permit.
   coordination is owned by the implementation.
 
 Snapshots contain capacity, acquired and available weight, queued waiters,
-admissions, rejections, cancellations, and shutdown state. Observers receive
-immutable low-cardinality events outside the accounting lock. Observer panics
-are recovered; slow observers delay only the caller delivering that event, and
-observers must support concurrent calls. Events contain no caller keys, errors,
+admissions, rejections, cancellations, and shutdown state. Set `EventBuffer`
+to retain bounded immutable events and call `DrainEvents` for an owned batch.
+Zero disables observation; full buffers overwrite the oldest event and report
+loss through `EventBatch.Dropped`. Events contain no caller keys, errors,
 callbacks, context values, or arbitrary labels.
 
 ## Errors

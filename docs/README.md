@@ -5,7 +5,7 @@
 - [Install and quick start](../README.md#install)
 - [API](api.md)
 - [Executable examples](../example_test.go)
-- [Package API](https://pkg.go.dev/github.com/faustbrian/go-semaphore)
+- [Package API](https://pkg.go.dev/github.com/faustbrian/go-semaphore/v2)
 
 ## Concepts and design
 
@@ -15,6 +15,7 @@
 
 - [Kubernetes](kubernetes.md)
 - [Operations](operations.md)
+- [Security threat model](security/threat-model.md)
 - [Performance](performance.md)
 - [Security policy and reporting guidance](../SECURITY.md)
 - [Support](../SUPPORT.md)

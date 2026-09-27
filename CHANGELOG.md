@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-09-27
+
+### Changed
+
+- Replace synchronous observation callbacks with bounded caller-pulled events,
+  preventing telemetry from withholding admitted permits or delaying release.
+- Recheck cancellation after the accounting lock is acquired and keep caller
+  context methods outside that lock.
+- Move the root module and imports to `/v2`; retain the immutable v1 API
+  baseline. Replace `Config.Observer` with `Config.EventBuffer`, drain events
+  explicitly, and handle reported event loss when migrating.
+
+This entry dates source preparation; publication requires the public tag and
+module artifacts.
+
+
 ### Changed
 
 - Adopt the checksum-verified `go-library-tools` v1.4.0 CLI and immutable W14

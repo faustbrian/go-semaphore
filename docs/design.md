@@ -28,12 +28,14 @@ queue is always explicitly bounded.
 
 ## Cancellation race
 
-An already-done context fails before admission. A queued caller selects between
-its ready channel and `ctx.Done()`, then resolves state under the mutex. If the
-grant has linearized, it returns the permit; otherwise cancellation removes the
-waiter, increments cancellation accounting, and attempts to admit the next
-head. This rule cannot consume capacity without returning ownership and cannot
-lose a wake-up.
+An already-done context fails before admission. `Acquire` rechecks cancellation
+after obtaining the accounting mutex, so cancellation while waiting for that
+mutex cannot consume capacity. A queued caller selects between its ready
+channel and `ctx.Done()`, then resolves state under the mutex. If the grant has
+linearized, it returns the permit; otherwise cancellation removes the waiter,
+increments cancellation accounting, and attempts to admit the next head. This
+rule cannot consume capacity without returning ownership and cannot lose a
+wake-up.
 
 ## Shutdown and drain
 
@@ -65,7 +67,7 @@ Recorded on 2026-08-02:
 `x/sync/semaphore` informed the strict head-of-line behavior. It accepts zero
 weight, panics on negative weight, waits for context cancellation on an
 oversized request, and releases raw weight without permit ownership. It has no
-queue bound, snapshot, observer, or close/drain lifecycle.
+queue bound, snapshot, event buffer, or close/drain lifecycle.
 
 Semian's bulkhead is resource-identified Ruby policy backed by host-wide SysV
 semaphore tickets or worker quotas, timed acquisition, and `SEM_UNDO`. This

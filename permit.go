@@ -39,15 +39,13 @@ func (permit *Permit) Release() error {
 	}
 	permit.released = true
 	permit.semaphore.acquired -= permit.weight
-	releasedEvent := permit.semaphore.eventLocked(EventReleased, ReasonReleased, permit.id, permit.weight)
-	events := permit.semaphore.grantWaitersLocked()
+	permit.semaphore.recordEventLocked(EventReleased, ReasonReleased, permit.id, permit.weight)
+	permit.semaphore.grantWaitersLocked()
 	if permit.semaphore.acquired == 0 && permit.semaphore.drained != nil {
 		close(permit.semaphore.drained)
 		permit.semaphore.drained = nil
 	}
 	permit.semaphore.mu.Unlock()
-	permit.semaphore.observe(releasedEvent)
-	permit.semaphore.observe(events...)
 	return nil
 }
 
@@ -58,47 +56,50 @@ func (semaphore *Semaphore) Acquire(ctx context.Context, weight int64) (*Permit,
 		semaphore.reject(reason, weight)
 		return nil, err
 	}
+	done := ctx.Done()
 	if err := ctx.Err(); err != nil {
-		semaphore.mu.Lock()
-		semaphore.cancellations++
-		event := semaphore.eventLocked(EventCanceled, cancellationReason(err), PermitID(0), weight)
-		semaphore.mu.Unlock()
-		semaphore.observe(event)
+		semaphore.recordCancellation(err, weight)
 		return nil, canceledError(err)
 	}
 
 	semaphore.mu.Lock()
+	select {
+	case <-done:
+		semaphore.mu.Unlock()
+		err := ctx.Err()
+		semaphore.recordCancellation(err, weight)
+		return nil, canceledError(err)
+	default:
+	}
 	if semaphore.closed {
 		semaphore.rejections++
-		event := semaphore.eventLocked(EventRejected, ReasonClosed, PermitID(0), weight)
+		semaphore.recordEventLocked(EventRejected, ReasonClosed, PermitID(0), weight)
 		semaphore.mu.Unlock()
-		semaphore.observe(event)
 		return nil, &ClosedError{}
 	}
 	if semaphore.waiterCount == 0 && semaphore.capacity-semaphore.acquired >= weight {
 		permit := semaphore.grantLocked(weight)
-		event := semaphore.eventLocked(EventAdmitted, ReasonImmediate, permit.id, weight)
+		semaphore.recordEventLocked(EventAdmitted, ReasonImmediate, permit.id, weight)
 		semaphore.mu.Unlock()
-		semaphore.observe(event)
 		return permit, nil
 	}
 	if semaphore.waiterCount >= semaphore.maxWaiters {
 		semaphore.rejections++
-		event := semaphore.eventLocked(EventRejected, ReasonQueueFull, PermitID(0), weight)
+		semaphore.recordEventLocked(EventRejected, ReasonQueueFull, PermitID(0), weight)
 		semaphore.mu.Unlock()
-		semaphore.observe(event)
 		return nil, &QueueFullError{MaxWaiters: semaphore.maxWaiters}
 	}
 
 	waiter := &waiter{weight: weight, ready: make(chan struct{})}
 	semaphore.enqueueWaiterLocked(waiter)
-	queuedEvent := semaphore.eventLocked(EventQueued, ReasonFIFO, PermitID(0), weight)
+	semaphore.recordEventLocked(EventQueued, ReasonFIFO, PermitID(0), weight)
 	semaphore.mu.Unlock()
-	semaphore.observe(queuedEvent)
 
+	var cause error
 	select {
 	case <-waiter.ready:
-	case <-ctx.Done():
+	case <-done:
+		cause = ctx.Err()
 	}
 
 	semaphore.mu.Lock()
@@ -112,14 +113,11 @@ func (semaphore *Semaphore) Acquire(ctx context.Context, weight int64) (*Permit,
 		semaphore.mu.Unlock()
 		return nil, err
 	}
-	cause := ctx.Err()
 	semaphore.removeWaiterLocked(waiter)
 	semaphore.cancellations++
-	canceledEvent := semaphore.eventLocked(EventCanceled, cancellationReason(cause), PermitID(0), weight)
-	events := semaphore.grantWaitersLocked()
+	semaphore.recordEventLocked(EventCanceled, cancellationReason(cause), PermitID(0), weight)
+	semaphore.grantWaitersLocked()
 	semaphore.mu.Unlock()
-	semaphore.observe(canceledEvent)
-	semaphore.observe(events...)
 	return nil, canceledError(cause)
 }
 
@@ -133,23 +131,20 @@ func (semaphore *Semaphore) TryAcquire(weight int64) (*Permit, bool, error) {
 	semaphore.mu.Lock()
 	if semaphore.closed {
 		semaphore.rejections++
-		event := semaphore.eventLocked(EventRejected, ReasonClosed, PermitID(0), weight)
+		semaphore.recordEventLocked(EventRejected, ReasonClosed, PermitID(0), weight)
 		semaphore.mu.Unlock()
-		semaphore.observe(event)
 		return nil, false, &ClosedError{}
 	}
 	if semaphore.waiterCount != 0 || semaphore.capacity-semaphore.acquired < weight {
 		semaphore.rejections++
-		event := semaphore.eventLocked(EventRejected, ReasonUnavailable, PermitID(0), weight)
+		semaphore.recordEventLocked(EventRejected, ReasonUnavailable, PermitID(0), weight)
 		semaphore.mu.Unlock()
-		semaphore.observe(event)
 		return nil, false, nil
 	}
 
 	permit := semaphore.grantLocked(weight)
-	event := semaphore.eventLocked(EventAdmitted, ReasonImmediate, permit.id, weight)
+	semaphore.recordEventLocked(EventAdmitted, ReasonImmediate, permit.id, weight)
 	semaphore.mu.Unlock()
-	semaphore.observe(event)
 	return permit, true, nil
 }
 
@@ -160,19 +155,18 @@ func (semaphore *Semaphore) grantLocked(weight int64) *Permit {
 	return &Permit{semaphore: semaphore, id: PermitID(semaphore.nextID), weight: weight}
 }
 
-func (semaphore *Semaphore) grantWaitersLocked() []Event {
-	var events []Event
+func (semaphore *Semaphore) grantWaitersLocked() {
 	for {
 		waiter := semaphore.waiterHead
 		if waiter == nil {
-			return events
+			return
 		}
 		if semaphore.capacity-semaphore.acquired < waiter.weight {
-			return events
+			return
 		}
 		semaphore.removeWaiterLocked(waiter)
 		waiter.permit = semaphore.grantLocked(waiter.weight)
-		events = semaphore.appendEventLocked(events, EventAdmitted, ReasonFIFO, waiter.permit.id, waiter.weight)
+		semaphore.recordEventLocked(EventAdmitted, ReasonFIFO, waiter.permit.id, waiter.weight)
 		close(waiter.ready)
 	}
 }
@@ -190,9 +184,15 @@ func (semaphore *Semaphore) validateWeight(weight int64) (Reason, error) {
 func (semaphore *Semaphore) reject(reason Reason, weight int64) {
 	semaphore.mu.Lock()
 	semaphore.rejections++
-	event := semaphore.eventLocked(EventRejected, reason, PermitID(0), weight)
+	semaphore.recordEventLocked(EventRejected, reason, PermitID(0), weight)
 	semaphore.mu.Unlock()
-	semaphore.observe(event)
+}
+
+func (semaphore *Semaphore) recordCancellation(cause error, weight int64) {
+	semaphore.mu.Lock()
+	semaphore.cancellations++
+	semaphore.recordEventLocked(EventCanceled, cancellationReason(cause), PermitID(0), weight)
+	semaphore.mu.Unlock()
 }
 
 func cancellationReason(err error) Reason {

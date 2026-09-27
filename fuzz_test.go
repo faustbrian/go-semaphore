@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-semaphore/v2"
 )
 
 func FuzzConfigAndTryAcquire(fuzz *testing.F) {

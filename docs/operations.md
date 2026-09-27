@@ -10,12 +10,11 @@ reasons, cancellation rate, and drain deadlines. Admissions are not downstream
 successes, and queue-full or closed rejections must not be recorded as
 dependency failures by an outer circuit breaker.
 
-Observers are synchronous delivery hooks outside the lock. Keep them fast,
-non-blocking, bounded, and safe for concurrent and reentrant calls. If an
-adapter buffers events, that adapter owns its queue bound, goroutine lifecycle,
-loss policy, and shutdown. Observer panics are ignored so telemetry cannot
-change permit accounting. Concurrent delivery is not a global ordering
-guarantee; consumers should use each event's immutable transition snapshot.
+Observation is pull-based. `EventBuffer` reserves a fixed event ring and zero
+disables event retention. `DrainEvents` returns transition-ordered owned data;
+when producers overrun the ring, the oldest event is overwritten and the batch
+reports how many events were dropped. Recording invokes no caller callback, so
+telemetry cannot delay returning an admitted permit or releasing capacity.
 
 The API accepts no keys, credentials, arbitrary labels, or error text. Permit
 IDs are process-local monotonic diagnostics and must not be treated as secrets,

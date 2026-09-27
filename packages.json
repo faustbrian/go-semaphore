@@ -6,7 +6,7 @@
       "module_directory": ".",
       "directory": ".",
       "name": "semaphore",
-      "import_path": "github.com/faustbrian/go-semaphore",
+      "import_path": "github.com/faustbrian/go-semaphore/v2",
       "kind": "public",
       "production": true,
       "executable": true,

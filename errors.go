@@ -33,6 +33,8 @@ const (
 	FieldCapacity ConfigField = "capacity"
 	// FieldMaxWaiters identifies Config.MaxWaiters.
 	FieldMaxWaiters ConfigField = "max waiters"
+	// FieldEventBuffer identifies Config.EventBuffer.
+	FieldEventBuffer ConfigField = "event buffer"
 )
 
 // ConfigProblem identifies a bounded configuration violation.

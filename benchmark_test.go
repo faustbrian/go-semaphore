@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-semaphore"
+	"github.com/faustbrian/go-semaphore/v2"
 	kitsemaphore "github.com/v8fg/kit4go/semaphore"
 	xsemaphore "golang.org/x/sync/semaphore"
 )
@@ -71,10 +71,10 @@ func BenchmarkUncontendedWeightedAcquire(b *testing.B) {
 		}
 	})
 
-	b.Run("semaphore-observer", func(b *testing.B) {
+	b.Run("semaphore-event-buffer", func(b *testing.B) {
 		sem, err := semaphore.New(semaphore.Config{
-			Capacity: 1,
-			Observer: semaphore.ObserverFunc(func(semaphore.Event) {}),
+			Capacity:    1,
+			EventBuffer: semaphore.MaxEventBuffer,
 		})
 		if err != nil {
 			b.Fatal(err)

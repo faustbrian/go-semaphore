@@ -2,15 +2,10 @@
 
 ## Supported versions
 
-The latest stable v1 release receives security fixes. Older releases and the
-`main` branch are unsupported; upgrade before reporting unless the issue is a
-regression under active development.
-
-| Version | Supported |
-| --- | --- |
-| Latest stable v1 release | Yes |
-| Older releases | No |
-| `main` | No |
+The latest stable release in the v2 line receives security fixes. Release
+preparation on `main` is not publication or a supported artifact. Legacy v1
+consumers must evaluate their own observation and lifecycle exposure; security
+support must not be inferred from the continued availability of old tags.
 
 ## Reporting a vulnerability
 
@@ -25,9 +20,10 @@ or benchmark artifact.
 
 ## Model
 
-The package processes only numeric configuration, weights, contexts, and a
-caller-supplied observer. Configuration and queues are bounded. It performs no
-network, filesystem, process, environment, reflection, or unsafe operation.
-Observer callbacks are untrusted: they run outside accounting locks and panics
-are recovered. Callers remain responsible for releasing permits and bounding
-the work protected by each permit.
+The package processes numeric configuration, weights, contexts, and
+caller-owned protected operations. Configuration, queues, and event retention
+are bounded. Observation invokes no caller callback; operation callbacks and
+custom contexts are trusted in-process collaborators, not a sandbox boundary.
+The primitive owns no network, filesystem, process, environment, reflection,
+or unsafe operation. Callers must release permits and bound protected work.
+See the [threat model](docs/security/threat-model.md) for residual risks.

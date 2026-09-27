@@ -31,8 +31,9 @@ valid until release; `Wait` observes their drain.
 Neither proves that protected work stopped. Automatic capacity return could
 admit overlapping work and violate conservation at the real resource.
 
-## Can an observer block or reenter?
+## Can observation block admission or release?
 
-Yes without corrupting accounting because callbacks run outside the lock.
-Blocking delays the delivering caller; adapters should own any asynchronous
-buffer and lifecycle explicitly.
+The v2 contract invokes no observation callbacks. Recording into the fixed event
+ring is bounded constant-time work. `DrainEvents` briefly owns the accounting
+lock while copying at most `EventBuffer` events; consumers should drain on a
+cadence appropriate for their telemetry-loss budget.
