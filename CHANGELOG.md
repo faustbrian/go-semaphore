@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Update the benchmark-only kit4go reference to v0.9.1 with accurate current
+  labels and license attribution. Its semaphore implementation is unchanged;
+  retain the original v0.9.0 attribution in dated measurements.
 - Update x/sync reference tests and benchmarks to v0.23.0, including current
   labels and license attribution; retain the dated v0.22.0 measurements.
 - The reference now panics when constructed with negative capacity and

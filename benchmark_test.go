@@ -60,7 +60,7 @@ func BenchmarkUncontendedWeightedAcquire(b *testing.B) {
 		}
 	})
 
-	b.Run("kit4go-v0.9.0", func(b *testing.B) {
+	b.Run("kit4go-v0.9.1", func(b *testing.B) {
 		sem := kitsemaphore.New(1)
 		b.ReportAllocs()
 		for b.Loop() {
@@ -149,7 +149,7 @@ func BenchmarkContendedWeightedAcquire(b *testing.B) {
 		})
 	})
 
-	b.Run("kit4go-v0.9.0-unfair", func(b *testing.B) {
+	b.Run("kit4go-v0.9.1-unfair", func(b *testing.B) {
 		sem := kitsemaphore.New(capacity)
 		b.ReportAllocs()
 		b.RunParallel(func(parallel *testing.PB) {
@@ -196,7 +196,7 @@ func BenchmarkMixedWeights(b *testing.B) {
 		}
 	})
 
-	b.Run("kit4go-v0.9.0", func(b *testing.B) {
+	b.Run("kit4go-v0.9.1", func(b *testing.B) {
 		sem := kitsemaphore.New(16)
 		b.ReportAllocs()
 		for index := 0; b.Loop(); index++ {
@@ -240,7 +240,7 @@ func BenchmarkCanceledAcquire(b *testing.B) {
 		}
 	})
 
-	b.Run("kit4go-v0.9.0", func(b *testing.B) {
+	b.Run("kit4go-v0.9.1", func(b *testing.B) {
 		sem := kitsemaphore.New(1)
 		if err := sem.Acquire(context.Background(), 1); err != nil {
 			b.Fatal(err)
