@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.1 - 2026-10-02
+
 ### Changed
 
 - Update the benchmark-only kit4go reference to v0.9.1 with accurate current
