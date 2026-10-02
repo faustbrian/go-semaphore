@@ -31,7 +31,7 @@ func BenchmarkUncontendedWeightedAcquire(b *testing.B) {
 		}
 	})
 
-	b.Run("x-sync-v0.22.0", func(b *testing.B) {
+	b.Run("x-sync-v0.23.0", func(b *testing.B) {
 		sem := xsemaphore.NewWeighted(1)
 		b.ReportAllocs()
 		for b.Loop() {
@@ -114,7 +114,7 @@ func BenchmarkContendedWeightedAcquire(b *testing.B) {
 		})
 	})
 
-	b.Run("x-sync-v0.22.0-fifo-unbounded", func(b *testing.B) {
+	b.Run("x-sync-v0.23.0-fifo-unbounded", func(b *testing.B) {
 		sem := xsemaphore.NewWeighted(capacity)
 		b.ReportAllocs()
 		b.RunParallel(func(parallel *testing.PB) {
@@ -184,7 +184,7 @@ func BenchmarkMixedWeights(b *testing.B) {
 		}
 	})
 
-	b.Run("x-sync-v0.22.0", func(b *testing.B) {
+	b.Run("x-sync-v0.23.0", func(b *testing.B) {
 		sem := xsemaphore.NewWeighted(16)
 		b.ReportAllocs()
 		for index := 0; b.Loop(); index++ {
@@ -226,7 +226,7 @@ func BenchmarkCanceledAcquire(b *testing.B) {
 		}
 	})
 
-	b.Run("x-sync-v0.22.0", func(b *testing.B) {
+	b.Run("x-sync-v0.23.0", func(b *testing.B) {
 		sem := xsemaphore.NewWeighted(1)
 		if err := sem.Acquire(context.Background(), 1); err != nil {
 			b.Fatal(err)
@@ -340,7 +340,7 @@ func BenchmarkStrictFIFOHeadOfLine(b *testing.B) {
 		}
 	})
 
-	b.Run("x-sync-v0.22.0-unbounded-caller-release", func(b *testing.B) {
+	b.Run("x-sync-v0.23.0-unbounded-caller-release", func(b *testing.B) {
 		for b.Loop() {
 			sem := xsemaphore.NewWeighted(8)
 			if err := sem.Acquire(context.Background(), 8); err != nil {
