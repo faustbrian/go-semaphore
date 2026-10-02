@@ -109,7 +109,10 @@ func TestQueuedCancellationCanReenterContextSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	held, err := sem.Acquire(context.Background(), 1)
+	// Bound setup so a broken admission predicate fails instead of hanging.
+	initialCtx, cancelInitial := context.WithTimeout(context.Background(), time.Second)
+	defer cancelInitial()
+	held, err := sem.Acquire(initialCtx, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
