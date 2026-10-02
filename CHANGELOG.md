@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- Update x/sync reference tests and benchmarks to v0.23.0, including current
+  labels and license attribution; retain the dated v0.22.0 measurements.
+- The reference now panics when constructed with negative capacity and
+  requires Go 1.26. Comparison fixtures use positive capacities; the owned
+  module retains its Go 1.27 support floor.
+
 ## 2.0.0 - 2026-09-27
 
 ### Changed

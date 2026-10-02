@@ -155,7 +155,7 @@ func TestReferenceBehaviorDifferences(t *testing.T) {
 
 	reference := xsemaphore.NewWeighted(1)
 	if !reference.TryAcquire(0) {
-		t.Fatal("x/sync v0.22.0 rejected its documented zero-weight operation")
+		t.Fatal("x/sync v0.23.0 rejected its documented zero-weight operation")
 	}
 	reference.Release(0)
 

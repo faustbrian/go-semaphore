@@ -16,7 +16,7 @@ go test -run '^$' -bench . -benchmem -count=10
 The benchmark matrix covers immediate and parallel acquire/release, mixed
 weights, already-canceled contexts, strict-FIFO head-of-line handoff, queue
 depths 1/32/256, allocations, and bounded-event-buffer overhead. It compares the
-owned implementation with `golang.org/x/sync/semaphore` v0.22.0, a buffered
+owned implementation with `golang.org/x/sync/semaphore` v0.23.0, a buffered
 channel, a minimal `sync.Cond` counter, and
 `github.com/v8fg/kit4go/semaphore` v0.9.0. The latter was released on
 2026-07-28 and was selected as an actively released third-party semaphore.
@@ -27,7 +27,7 @@ the result:
 | Baseline | Weight | Waiting policy | Queue bound | Release ownership | Shutdown/observation |
 | --- | --- | --- | --- | --- | --- |
 | this package | positive weighted | strict FIFO with head-of-line blocking | explicit | permit, exactly once | close, drain, snapshot, event buffer |
-| x/sync v0.22.0 | non-negative weighted | strict FIFO with head-of-line blocking | none | caller supplies weight | none |
+| x/sync v0.23.0 | non-negative weighted | strict FIFO with head-of-line blocking | none | caller supplies weight | none |
 | buffered channel | unit only | scheduler/channel order, not this FIFO contract | token capacity only | caller receives token | channel semantics |
 | minimal `sync.Cond` | unit only | unfair signal selection | none | caller increments counter | none |
 | kit4go v0.9.0 | weighted | unit requests may bypass weighted requests | none | caller supplies weight | close; no owned drain or event buffer |
@@ -42,6 +42,7 @@ The retained local sample records Go version, operating system, architecture,
 CPU, capacity, parallelism, allocations, sample count, command, dependency
 versions, a statistical summary, and the raw-output digest in
 [`benchmarks/2026-08-02-darwin-arm64.md`](benchmarks/2026-08-02-darwin-arm64.md).
+That sample used x/sync v0.22.0, not the current v0.23.0 reference dependency.
 It records the historical v1 observer implementation, not measured v2 event
 buffer performance or a cross-machine performance guarantee. Re-run the
 current benchmark matrix before making v2 performance claims.
