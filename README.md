@@ -3,7 +3,7 @@
 [![CI](https://github.com/faustbrian/go-semaphore/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-semaphore/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-semaphore/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-optional_local-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-semaphore/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-semaphore/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-semaphore?sort=semver)](https://github.com/faustbrian/go-semaphore/releases)
@@ -130,6 +130,14 @@ The semaphore is process-local and therefore pod-local. With capacity `N` on
 `R` replicas, aggregate in-flight weight can reach `N * R`. It is not global
 exclusion. See [Kubernetes operations](docs/kubernetes.md) before using local
 capacity in a replicated workload.
+
+## Development
+
+Start with `go test ./...` or a focused package/test selector. `make check` and
+`make ci` use bounded checks with the public verifier declared in `.golib.yaml`,
+including named race regressions for permit accounting, cancellation and drain.
+See [contributor verification](CONTRIBUTING.md#verification) for focused fuzzing,
+optional local mutation and explicit full/release qualification.
 
 ## Documentation
 
