@@ -40,7 +40,7 @@ operations:
   gate: fuzz
   steps:
   - type: go-test
-    packages: ["./..."]
+    packages: ["."]
     fuzz: '^FuzzConfigAndTryAcquire$'
     budget: 100x
     timeout: 2m
