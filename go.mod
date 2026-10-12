@@ -4,5 +4,5 @@ go 1.27.0
 
 require (
 	github.com/v8fg/kit4go v0.9.1
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 )
