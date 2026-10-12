@@ -70,3 +70,10 @@ require a module release. Remote-main delivery and applicable CI remain pending.
 The exact task-owned build/module/temporary caches, scanner and rendered output
 were removed after the bounded verification session. Shared checker adoption,
 remote-main delivery and exact-source CI remain pending, not claimed complete.
+
+## Objective enforcement adoption
+
+The local `source-docs-check` target is required by ordinary/full checks and CI.
+Shared CI uses `source_documentation: check` with the immutable Tools v2.4.0
+workflow and matching authenticated binary/checksum declaration. Structural
+checks do not replace this maintained semantic audit or native docs/examples.

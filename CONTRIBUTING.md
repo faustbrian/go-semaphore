@@ -42,7 +42,7 @@ that hide a failing package.
 
 For ordinary source work, `go test ./...` runs deterministic tests, fuzz seeds
 and saved corpus regressions without external services. Use the qualified public
-Golib v2.1.0 verifier declared in `.golib.yaml` for repository checks:
+Golib v2.4.0 verifier declared in `.golib.yaml` for repository checks:
 
 ```bash
 make inventory
@@ -107,3 +107,11 @@ Follow [repository structure policy](AGENTS.md#repository-structure). New module
 require an explicit purpose, ownership boundary, dependency review, package
 catalog entry, full quality gates, documentation, changelog, license, security
 policy, compatibility plan, and release dry-run.
+
+## Source documentation
+
+Use the authenticated Tools v2.4.0 release declared in `.golib.yaml`.
+`make source-docs-check` checks all tracked Go documentation without compilation.
+It is required by `make check`, `make check-full` and `make ci`; shared CI selects
+the same strict check and cannot pass its required result if the check fails.
+Semantic contract review and the native documentation/examples remain necessary.
