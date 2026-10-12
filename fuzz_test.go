@@ -7,6 +7,8 @@ import (
 	"github.com/faustbrian/go-semaphore/v2"
 )
 
+// FuzzConfigAndTryAcquire treats numeric bounds and weights as untrusted and
+// checks that rejection or exactly-once release preserves capacity accounting.
 func FuzzConfigAndTryAcquire(fuzz *testing.F) {
 	fuzz.Add(int64(1), int64(1), 0)
 	fuzz.Add(int64(8), int64(9), 16)

@@ -1,5 +1,16 @@
 // Package semaphore provides a process-local FIFO weighted semaphore with
 // explicit permit ownership and deterministic shutdown.
+// Construct a Semaphore with New, then acquire and release a Permit or use
+// Execute to release automatically when an operation returns or panics.
+//
+// Capacity limits simultaneous resource use, not request rate. Strict FIFO can
+// leave capacity idle behind a large waiter; smaller requests cannot bypass it.
+// Callers own operation deadlines and permit release. The package starts no
+// goroutines or timers, introduces no infrastructure or cgo dependency, and does
+// not provide distributed leases, fencing or automatic recovery of lost permits.
+// Close stops admission; Wait observes held weight draining without stopping
+// the protected operations themselves. See the repository's docs/design.md for
+// the cancellation and shutdown model.
 package semaphore
 
 import (
@@ -13,26 +24,45 @@ const MaxWaiters = 1_000_000
 // MaxEventBuffer is the largest supported bounded observation queue.
 const MaxEventBuffer = 65_536
 
-// Config defines immutable semaphore capacity and queue bounds.
+// Config defines capacity and queue bounds copied by New.
+// Its zero value is invalid because Capacity must be positive.
 type Config struct {
-	Capacity    int64
-	MaxWaiters  int
+	// Capacity is the total available positive weight.
+	Capacity int64
+	// MaxWaiters bounds queued acquisitions; zero disables waiting.
+	// Valid values range from zero through the package constant MaxWaiters.
+	MaxWaiters int
+	// EventBuffer bounds retained transition events; zero disables retention.
+	// Valid values range from zero through MaxEventBuffer.
 	EventBuffer int
 }
 
-// Snapshot is an immutable copy of observable semaphore state.
+// Snapshot is a value copy of observable semaphore state; modifying it cannot
+// change the Semaphore. Counters wrap on uint64 overflow.
 type Snapshot struct {
-	Capacity      int64
-	Acquired      int64
-	Available     int64
-	Waiters       int
-	Admissions    uint64
-	Rejections    uint64
+	// Capacity is the configured total weight.
+	Capacity int64
+	// Acquired is weight held by unreleased permits.
+	Acquired int64
+	// Available is Capacity minus Acquired, even after Close.
+	Available int64
+	// Waiters counts queued acquisitions not yet granted or removed.
+	Waiters int
+	// Admissions counts successful acquisitions, not completed operations.
+	Admissions uint64
+	// Rejections counts invalid, oversized, full-queue, unavailable and closed attempts.
+	Rejections uint64
+	// Cancellations counts acquisition attempts resolved as canceled or expired.
+	// Canceled Wait calls do not increment it.
 	Cancellations uint64
-	Closed        bool
+	// Closed reports that admission has stopped, not that held weight has drained.
+	Closed bool
 }
 
 // Semaphore is a process-local weighted counting semaphore.
+// All methods may be called concurrently. Construct it with New; its zero value
+// is not a usable substitute. Do not copy a Semaphore after first use.
+// It never expires permits or cancels admitted operations.
 type Semaphore struct {
 	mu            sync.Mutex
 	capacity      int64
@@ -63,6 +93,8 @@ type waiter struct {
 }
 
 // New constructs a semaphore after validating all configuration.
+// Invalid capacity or queue/event bounds return nil and a *ConfigError matching
+// ErrInvalidConfig. Construction starts no background work.
 func New(config Config) (*Semaphore, error) {
 	if config.Capacity <= 0 {
 		return nil, &ConfigError{field: FieldCapacity, problem: ProblemMustBePositive}
@@ -86,7 +118,7 @@ func New(config Config) (*Semaphore, error) {
 	}, nil
 }
 
-// Snapshot returns a consistent immutable copy of current state.
+// Snapshot returns a consistent value copy of current state.
 func (semaphore *Semaphore) Snapshot() Snapshot {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
@@ -108,6 +140,8 @@ func (semaphore *Semaphore) snapshotLocked() Snapshot {
 
 // Close idempotently stops new admission and rejects every queued waiter.
 // Existing permits remain valid and releasable.
+// It returns nil without waiting for those permits; use Wait to observe drain.
+// Snapshot and DrainEvents remain usable after Close.
 func (semaphore *Semaphore) Close() error {
 	semaphore.mu.Lock()
 	if semaphore.closed {
@@ -158,6 +192,12 @@ func (semaphore *Semaphore) removeWaiterLocked(waiter *waiter) {
 
 // Wait blocks until all acquired weight is returned or ctx is done. It does
 // not close the semaphore or wait for queued callers unless they are admitted.
+// Close first when shutdown must prevent further admission. Without Close,
+// reaching zero is only a drain-generation boundary: new work may already hold
+// weight by the time Wait returns. If no weight is held, Wait returns nil even
+// for an expired context. Otherwise ctx must be non-nil; cancellation returns a
+// *CanceledError matching the package and corresponding context sentinel.
+// If drain and cancellation race, either result may be observed.
 func (semaphore *Semaphore) Wait(ctx context.Context) error {
 	semaphore.mu.Lock()
 	if semaphore.acquired == 0 {
@@ -165,6 +205,8 @@ func (semaphore *Semaphore) Wait(ctx context.Context) error {
 		return nil
 	}
 	if semaphore.drained == nil {
+		// Each channel represents one nonzero-to-zero generation. Release closes
+		// it only after granting FIFO waiters, so a handoff is not a false drain.
 		semaphore.drained = make(chan struct{})
 	}
 	drained := semaphore.drained

@@ -97,6 +97,8 @@ func TestAcquireDoesNotCallContextWhileHoldingAccountingLock(t *testing.T) {
 	}
 }
 
+// snapshotErrContext reenters Snapshot from Err to expose context callbacks
+// accidentally invoked under the Semaphore accounting lock.
 type snapshotErrContext struct {
 	context.Context
 	sem     *Semaphore

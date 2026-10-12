@@ -7,15 +7,21 @@ import (
 )
 
 // PermitID is stable process-local identity metadata for one admission.
+// Values increment per Semaphore and wrap on uint64 overflow. They are not
+// globally unique identifiers, authorization credentials or fencing tokens.
 type PermitID uint64
 
-// IsZero reports whether the identifier is unset.
+// IsZero reports whether the numeric identifier is zero, including the default
+// value or an admission whose sequence wrapped to zero.
 func (id PermitID) IsZero() bool { return id == 0 }
 
 // String returns a bounded non-secret diagnostic representation.
 func (id PermitID) String() string { return strconv.FormatUint(uint64(id), 10) }
 
 // Permit owns acquired weight until Release succeeds exactly once.
+// Only Acquire and TryAcquire create usable permits. Keep the returned pointer:
+// copying a Permit would duplicate release state and violate capacity accounting.
+// ID and Weight may run concurrently with Release. The zero value is unusable.
 type Permit struct {
 	semaphore *Semaphore
 	id        PermitID
@@ -31,6 +37,9 @@ func (permit *Permit) Weight() int64 { return permit.weight }
 
 // Release returns the permit's weight exactly once. It remains valid after the
 // acquisition context is canceled and is safe for concurrent callers.
+// It also remains valid after Close. The first call returns nil; subsequent
+// calls return *DuplicateReleaseError matching ErrDuplicateRelease only after
+// the successful release has completed capacity accounting.
 func (permit *Permit) Release() error {
 	permit.semaphore.mu.Lock()
 	if permit.released {
@@ -51,6 +60,16 @@ func (permit *Permit) Release() error {
 
 // Acquire acquires positive weight immediately when capacity is available or
 // waits in strict FIFO order. The context must be non-nil.
+// It returns a non-nil caller-owned permit only on success; errors return nil.
+// Nonpositive and oversized weights produce *WeightError before context or
+// closed-state checks. An already-canceled context produces *CanceledError
+// before closed-state checks. Closed admission produces *ClosedError; a full
+// waiter queue produces *QueueFullError, including when MaxWaiters is zero.
+//
+// Once queued, a grant or Close already committed under the accounting lock
+// takes precedence over cancellation. A successful grant therefore still owns
+// weight even if ctx is now done. Always release the returned permit; canceling
+// ctx does not release it or stop admitted work.
 func (semaphore *Semaphore) Acquire(ctx context.Context, weight int64) (*Permit, error) {
 	if reason, err := semaphore.validateWeight(weight); err != nil {
 		semaphore.reject(reason, weight)
@@ -103,6 +122,8 @@ func (semaphore *Semaphore) Acquire(ctx context.Context, weight int64) (*Permit,
 	}
 
 	semaphore.mu.Lock()
+	// Resolve the state transition, not the select winner: returning cancellation
+	// after a committed grant would strand acquired weight without an owner.
 	if waiter.permit != nil {
 		permit := waiter.permit
 		semaphore.mu.Unlock()
@@ -122,6 +143,9 @@ func (semaphore *Semaphore) Acquire(ctx context.Context, weight int64) (*Permit,
 }
 
 // TryAcquire attempts immediate admission without bypassing queued callers.
+// Success returns a permit, true and nil. Temporarily unavailable capacity or
+// a queued predecessor returns nil, false and nil; invalid/oversized weights or
+// closed admission return nil, false and the same typed errors as Acquire.
 func (semaphore *Semaphore) TryAcquire(weight int64) (*Permit, bool, error) {
 	if reason, err := semaphore.validateWeight(weight); err != nil {
 		semaphore.reject(reason, weight)
@@ -162,6 +186,9 @@ func (semaphore *Semaphore) grantWaitersLocked() {
 			return
 		}
 		if semaphore.capacity-semaphore.acquired < waiter.weight {
+			// Skipping a heavy head admits a stream of small followers that can
+			// starve it. TestWeightedHeadEventuallyRunsWithoutFollowerBypass
+			// protects this intentional utilization-versus-fairness tradeoff.
 			return
 		}
 		semaphore.removeWaiterLocked(waiter)

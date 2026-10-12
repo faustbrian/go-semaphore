@@ -17,9 +17,9 @@ var (
 	ErrOversize = errors.New("semaphore: weight exceeds capacity")
 	// ErrQueueFull classifies bounded-waiter saturation.
 	ErrQueueFull = errors.New("semaphore: waiter queue full")
-	// ErrCanceled classifies acquisition cancellation.
+	// ErrCanceled classifies acquisition or drain-wait cancellation.
 	ErrCanceled = errors.New("semaphore: context canceled")
-	// ErrDeadline classifies acquisition deadline expiry.
+	// ErrDeadline classifies acquisition or drain-wait deadline expiry.
 	ErrDeadline = errors.New("semaphore: context deadline exceeded")
 	// ErrClosed classifies admission after deterministic shutdown.
 	ErrClosed = errors.New("semaphore: closed")
@@ -72,6 +72,7 @@ func (err *ConfigError) Unwrap() error { return ErrInvalidConfig }
 
 // DuplicateReleaseError identifies the permit released more than once.
 type DuplicateReleaseError struct {
+	// ID identifies the already released permit within its Semaphore.
 	ID PermitID
 }
 
@@ -85,7 +86,9 @@ func (err *DuplicateReleaseError) Unwrap() error { return ErrDuplicateRelease }
 
 // WeightError describes an invalid or oversized acquisition request.
 type WeightError struct {
-	Weight   int64
+	// Weight is the rejected requested weight.
+	Weight int64
+	// Capacity is the Semaphore's configured capacity.
 	Capacity int64
 	oversize bool
 }
@@ -108,6 +111,7 @@ func (err *WeightError) Unwrap() error {
 
 // QueueFullError reports deterministic bounded-waiter saturation.
 type QueueFullError struct {
+	// MaxWaiters is the configured queue limit, including zero when waiting is disabled.
 	MaxWaiters int
 }
 
@@ -122,6 +126,7 @@ func (err *QueueFullError) Unwrap() error { return ErrQueueFull }
 // CanceledError distinguishes cancellation from deadline expiry while
 // preserving compatibility with the corresponding context error.
 type CanceledError struct {
+	// Deadline distinguishes deadline expiry from explicit context cancellation.
 	Deadline bool
 }
 

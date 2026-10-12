@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Documentation
+
+- Clarify FIFO cancellation precedence, permit non-copyability, shutdown versus
+  drain, observation ownership, configuration defaults and typed error contracts.
+
 ## 2.0.1 - 2026-10-02
 
 ### Changed

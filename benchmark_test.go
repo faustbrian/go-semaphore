@@ -13,6 +13,9 @@ import (
 	xsemaphore "golang.org/x/sync/semaphore"
 )
 
+// BenchmarkUncontendedWeightedAcquire measures serial acquire/release at unit
+// capacity. b.Loop excludes construction; reference ownership/event semantics
+// differ as described in docs/performance.md.
 func BenchmarkUncontendedWeightedAcquire(b *testing.B) {
 	b.Run("semaphore", func(b *testing.B) {
 		sem, err := semaphore.New(semaphore.Config{Capacity: 1})
@@ -92,6 +95,9 @@ func BenchmarkUncontendedWeightedAcquire(b *testing.B) {
 	})
 }
 
+// BenchmarkContendedWeightedAcquire measures parallel unit-weight handoff at
+// capacity two. Construction precedes RunParallel; the channel, Cond and kit4go
+// references do not preserve the owned FIFO/queue/lifecycle contract.
 func BenchmarkContendedWeightedAcquire(b *testing.B) {
 	const capacity = 2
 
@@ -163,6 +169,8 @@ func BenchmarkContendedWeightedAcquire(b *testing.B) {
 	})
 }
 
+// BenchmarkMixedWeights cycles through weights 1, 2, 4 and 8 at capacity 16,
+// releasing each before the next acquisition. b.Loop excludes construction.
 func BenchmarkMixedWeights(b *testing.B) {
 	weights := [...]int64{1, 2, 4, 8}
 
@@ -209,6 +217,9 @@ func BenchmarkMixedWeights(b *testing.B) {
 	})
 }
 
+// BenchmarkCanceledAcquire measures rejection by an already-canceled context.
+// Reference permits are held so their rejection paths cannot admit work; b.Loop
+// excludes semaphore/context setup.
 func BenchmarkCanceledAcquire(b *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -255,6 +266,9 @@ func BenchmarkCanceledAcquire(b *testing.B) {
 	})
 }
 
+// BenchmarkCancellationQueueDepth measures whole queue setup, cancellation and
+// drain at depths 1, 32 and 256. Unlike the steady-state benchmarks, setup and
+// goroutine coordination are intentionally included in each measured iteration.
 func BenchmarkCancellationQueueDepth(b *testing.B) {
 	for _, depth := range []int{1, 32, 256} {
 		b.Run(fmt.Sprintf("depth-%d", depth), func(b *testing.B) {
@@ -294,6 +308,10 @@ func BenchmarkCancellationQueueDepth(b *testing.B) {
 	}
 }
 
+// BenchmarkStrictFIFOHeadOfLine measures complete weighted queue handoff,
+// including construction and goroutine setup. The owned queue uses observable
+// waiter counts; the x/sync reference uses scheduler yields, so this is not proof
+// of identical queue ordering or a like-for-like scheduling cost.
 func BenchmarkStrictFIFOHeadOfLine(b *testing.B) {
 	b.Run("semaphore-bounded-owned", func(b *testing.B) {
 		for b.Loop() {

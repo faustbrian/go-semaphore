@@ -46,19 +46,27 @@ const (
 	ReasonShutdown Reason = "shutdown"
 )
 
-// Event is an immutable, bounded, secret-safe transition snapshot.
+// Event is a value copy of a bounded transition snapshot.
+// It contains no caller-provided labels or error text.
 type Event struct {
-	Kind     EventKind
-	Reason   Reason
+	// Kind identifies the recorded state transition.
+	Kind EventKind
+	// Reason identifies the admission, rejection or lifecycle cause.
+	Reason Reason
+	// PermitID identifies an admitted or released permit; other transitions use zero.
 	PermitID PermitID
-	Weight   int64
+	// Weight is the requested or released weight, or zero for the Close transition.
+	Weight int64
+	// Snapshot captures state after this transition, before any later FIFO grants.
 	Snapshot Snapshot
 }
 
 // EventBatch is an owned, bounded observation batch. Dropped reports events
 // overwritten since the previous drain because the configured buffer was full.
 type EventBatch struct {
-	Events  []Event
+	// Events contains retained transitions in recording order; it is caller-owned.
+	Events []Event
+	// Dropped counts overwritten events since the last drain, saturating at max uint64.
 	Dropped uint64
 }
 
