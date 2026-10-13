@@ -1,5 +1,8 @@
 # Source documentation audit
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 Source baseline: `c0971755e021f868c0e5b7b69092c6d4f3803736` (remote main).
 Scope: root module `github.com/faustbrian/go-semaphore/v2`, root package
 `semaphore` and its internal/external test files. Reproduce the file inventory

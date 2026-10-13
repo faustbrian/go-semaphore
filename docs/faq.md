@@ -1,5 +1,8 @@
 # FAQ
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 ## Is this a mutex?
 
 No. It permits weighted concurrent ownership and does not identify one critical

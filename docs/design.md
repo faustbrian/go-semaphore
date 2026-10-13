@@ -1,5 +1,8 @@
 # Design and semantics
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 ## Ownership and synchronization
 
 One mutex owns capacity accounting, the FIFO queue, counters, shutdown state,

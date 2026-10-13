@@ -1,5 +1,8 @@
 # Kubernetes semantics
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 The semaphore is memory in one process. It is pod-local when one application
 process runs per pod. Capacity `N` across `R` replicas permits up to `N * R`
 aggregate in-flight weight when traffic reaches all replicas. Uneven routing

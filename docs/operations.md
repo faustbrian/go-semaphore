@@ -1,5 +1,8 @@
 # Operations and security
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 Size capacity from the protected local resource, not request rate. Weighted
 units must represent one documented, stable resource quantity. `MaxWaiters`
 bounds memory and waiting demand; a full queue is overload evidence and should

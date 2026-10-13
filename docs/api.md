@@ -1,5 +1,8 @@
 # API reference
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: Operations and security](operations.md)
+
 The canonical API reference is generated from exported Go documentation:
 
 ```sh

@@ -1,5 +1,8 @@
 # Performance
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 Uncontended acquisition performs one mutex transition and allocates an owned
 permit. Contended acquisition additionally allocates one waiter and channel.
 Strict FIFO may reduce utilization when a large head request does not fit while

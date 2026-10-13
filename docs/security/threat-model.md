@@ -1,5 +1,8 @@
 # Semaphore threat model
 
+[Documentation map](../index.md) · [Repository README](../../README.md)
+[Next: Operations and security](../operations.md)
+
 Scope: root v2 contract; release preparation dated 2026-09-27.
 
 ## Scope and trust boundaries

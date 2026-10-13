@@ -1,5 +1,8 @@
 # Migration
 
+[Documentation map](index.md) · [Repository README](../README.md)
+[Next: API reference](api.md)
+
 ## From a buffered channel
 
 A channel send/receive can model fixed unit-weight concurrency. Migrate only
