@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "repository": "github.com/faustbrian/go-semaphore",
-  "go_version": "1.27.0",
+  "go_version": "1.27.3",
   "modules": [
     {
       "directory": ".",
